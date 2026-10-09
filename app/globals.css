@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+:root {
+  --color-navy: #1a2744;
+  --color-dark: #0f1b35;
+  --color-gold: #c9a04b;
+  --color-offwhite: #f7f6f4;
+}
+
+@theme inline {
+  --color-navy: var(--color-navy);
+  --color-dark: var(--color-dark);
+  --color-gold: var(--color-gold);
+  --color-offwhite: var(--color-offwhite);
+  --font-serif: var(--font-libre-baskerville), Georgia, serif;
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Keep layout transforms/animated elements from expanding the document width. */
+main,
+section,
+header,
+footer {
+  max-width: 100%;
+}
+
+body {
+  background: var(--color-offwhite);
+  font-family: var(--font-sans);
+}
+
+
+/* Premium motion — intentionally slow and restrained for a luxury real-estate feel. */
+@keyframes heroImageZoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.035); }
+}
+
+.hero-image-zoom {
+  animation: heroImageZoom 14s ease-out both;
+  transform-origin: center center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .hero-image-zoom {
+    animation: none;
+  }
+
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+  }
+}
