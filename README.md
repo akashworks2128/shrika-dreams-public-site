@@ -63,3 +63,17 @@ environment with standard internet access (local dev machine, CI, Vercel).
 ## Out of Scope (Phase 1)
 No additional pages, no Supabase wiring, no Phase 2–5 features. The search and
 contact forms are UI-only for now (not yet connected to a backend).
+
+## Blog Gallery Lightbox
+
+Gallery images in blog posts open in a full-screen viewer (close, previous/next, Escape, backdrop click, arrow keys, swipe on touch screens, scroll lock, reduced-motion aware).
+
+- `app/components/blog/GalleryLightbox.tsx` — viewer + gallery grid (client component)
+- `app/components/blog/TiptapRenderer.tsx` — gallery blocks render through `GalleryLightbox`
+
+No new dependencies were added. To run locally:
+
+```bash
+npm install
+npm run dev
+```

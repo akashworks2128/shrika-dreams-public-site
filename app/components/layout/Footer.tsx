@@ -20,12 +20,14 @@ const SOCIAL_LINKS = [
   { Icon: Linkedin, label: "LinkedIn" },
 ];
 
+// Existing entries keep their original placeholder href; only Blog is a real route.
 const QUICK_LINKS = [
-  "Home",
-  "Featured Projects",
-  "Builder Partners",
-  "About",
-  "Contact",
+  { label: "Home", href: "#" },
+  { label: "Featured Projects", href: "#" },
+  { label: "Builder Partners", href: "#" },
+  { label: "About", href: "#" },
+  { label: "Contact", href: "#" },
+  { label: "Blog", href: "/blog" },
 ];
 
 const OUR_BUILDERS = [
@@ -92,15 +94,15 @@ export default function Footer() {
               Quick Links
             </h4>
             <ul className="space-y-3">
-              {QUICK_LINKS.map((link, index) => (
-                <li key={`${link}-${index}`}>
-                  <a
-                    href="#"
+              {QUICK_LINKS.map(({ label, href }, index) => (
+                <li key={`${label}-${index}`}>
+                  <Link
+                    href={href}
                     className="text-sm transition-colors flex items-center gap-1.5 group text-white/[0.38] hover:text-white/80"
                   >
                     <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 -ml-1 transition-opacity" />
-                    {link}
-                  </a>
+                    {label}
+                  </Link>
                 </li>
               ))}
             </ul>
