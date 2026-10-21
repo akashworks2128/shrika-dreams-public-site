@@ -45,7 +45,7 @@ function SortDropdown({
   // Click-outside to close.
   useEffect(() => {
     if (!open) return;
-    function handleClickOutside(e: MouseEvent) {
+    function handleClickOutside(e: PointerEvent) {
       if (
         containerRef.current &&
         !containerRef.current.contains(e.target as Node)
@@ -53,8 +53,8 @@ function SortDropdown({
         setOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("pointerdown", handleClickOutside);
+    return () => document.removeEventListener("pointerdown", handleClickOutside);
   }, [open]);
 
   // Focus the active option whenever the menu opens or the active index changes.
@@ -250,8 +250,11 @@ export default function ProjectsExplorer() {
   const propertiesFoundRef = useRef<HTMLDivElement>(null);
 
   function scrollToPropertiesFound() {
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     propertiesFoundRef.current?.scrollIntoView({
-      behavior: "smooth",
+      behavior: reduceMotion ? "auto" : "smooth",
       block: "start",
     });
   }

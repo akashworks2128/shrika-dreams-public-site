@@ -1,13 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { ArrowRight, MapPin } from "lucide-react";
 import type { Project } from "@/lib/data/projects";
 
 export default function ProjectCard({ project }: { project: Project }) {
   const isPlot = project.propertyType === "Plot";
+  const actionLabel = isPlot ? "View Plot Details" : "View Details";
 
   return (
-    <article className="w-full min-w-0 max-w-full bg-white rounded-xl overflow-hidden border border-black/[0.06] shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(0,0,0,0.10)] group">
+    <article className="w-full min-w-0 max-w-full bg-white rounded-xl overflow-hidden border border-black/[0.06] shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-[transform,box-shadow] duration-500 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(0,0,0,0.10)] group">
       {/* Image */}
       <div className="relative w-full h-48 min-w-0 bg-gray-100 overflow-hidden">
         <Image
@@ -71,11 +72,19 @@ export default function ProjectCard({ project }: { project: Project }) {
           </div>
         </div>
 
+        {/*
+          Always-visible action. Desktop (hover-capable) keeps the outlined
+          button that fills navy on hover. Touch devices can't hover, so there
+          the button is permanently filled navy, has a 44px minimum tap target
+          and a pressed state. Destination is unchanged: /projects/[slug].
+        */}
         <Link
           href={`/projects/${project.slug}`}
-          className="block w-full py-2.5 text-sm font-semibold rounded border-2 border-navy text-navy text-center transition-all duration-300 hover:bg-navy hover:text-white hover:-translate-y-px"
+          aria-label={`${actionLabel}: ${project.name}`}
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded border-2 border-navy px-3 py-2.5 text-center text-sm font-semibold text-navy transition-[background-color,color,transform] duration-300 hover:-translate-y-px hover:bg-navy hover:text-white active:bg-navy active:text-white [@media(hover:none)]:bg-navy [@media(hover:none)]:text-white"
         >
-          {isPlot ? "View Plot Details" : "View Details"}
+          {actionLabel}
+          <ArrowRight className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
         </Link>
       </div>
     </article>

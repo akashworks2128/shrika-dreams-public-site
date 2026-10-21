@@ -53,7 +53,7 @@ export default function LocalityCard({ locality }: { locality: Locality }) {
 
           <Link
             href={`/localities/${slug}`}
-            className="inline-flex items-center gap-1 text-sm font-semibold text-navy group"
+            className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-navy group"
           >
             View Locality Details
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />

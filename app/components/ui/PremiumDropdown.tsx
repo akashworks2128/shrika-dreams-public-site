@@ -110,7 +110,7 @@ export default function PremiumDropdown({
     }
 
     window.addEventListener("resize", recalculate);
-    window.addEventListener("scroll", recalculate, true);
+    window.addEventListener("scroll", recalculate, { capture: true, passive: true });
     return () => {
       window.removeEventListener("resize", recalculate);
       window.removeEventListener("scroll", recalculate, true);
@@ -120,13 +120,13 @@ export default function PremiumDropdown({
   // Click-outside to close.
   useEffect(() => {
     if (!open) return;
-    function handleClickOutside(e: MouseEvent) {
+    function handleClickOutside(e: PointerEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("pointerdown", handleClickOutside);
+    return () => document.removeEventListener("pointerdown", handleClickOutside);
   }, [open]);
 
   // Focus the active option whenever the menu opens or the active index changes.

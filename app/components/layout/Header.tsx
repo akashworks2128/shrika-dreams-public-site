@@ -1,9 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Building2, ChevronRight, Menu, Phone, X } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  ChevronRight,
+  FileText,
+  Home,
+  Info,
+  Mail,
+  MapPin,
+  Menu,
+  Phone,
+  Users,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { BRAND, NAV_LINKS } from "@/lib/constants";
 
 interface HeaderProps {
@@ -17,9 +32,46 @@ interface HeaderProps {
 
 const PENDING_SCROLL_KEY = "pendingScrollToHash";
 
+/** Outline icon for each nav label (labels come from NAV_LINKS). */
+const NAV_ICONS: Record<string, LucideIcon> = {
+  Home,
+  Localities: MapPin,
+  Projects: Building2,
+  Builders: Users,
+  About: Info,
+  Contact: Mail,
+  Blog: FileText,
+};
+
+// Existing building photo already used by the hero; only fetched once the
+// menu has been opened, so it costs nothing on first load.
+const MENU_HEADER_IMAGE =
+  "https://images.unsplash.com/photo-1564486593523-38d62206e706?w=640&h=320&fit=crop&auto=format";
+
+/** Smooth scrolling unless the visitor prefers reduced motion. */
+function scrollBehavior(): ScrollBehavior {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? "auto"
+    : "smooth";
+}
+
+/**
+ * Locks/unlocks page scroll. Both <html> and <body> are set: whichever one
+ * the browser treats as the viewport scroller is then locked.
+ */
+function setScrollLock(locked: boolean) {
+  const value = locked ? "hidden" : "";
+  document.documentElement.style.overflow = value;
+  document.body.style.overflow = value;
+}
+
 export default function Header({ variant = "overlay" }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Becomes true the first time the menu is opened (lazy-loads the header photo).
+  const [menuEverOpened, setMenuEverOpened] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -41,17 +93,21 @@ export default function Header({ variant = "overlay" }: HeaderProps) {
     return () => media.removeEventListener("change", handleChange);
   }, []);
 
-  // While the mobile sheet is open: lock page scroll behind it and allow Escape to close.
+  // While the mobile sheet is open: lock page scroll behind it, move focus to
+  // the close button, and allow Escape to close.
   useEffect(() => {
     if (!mobileOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    setScrollLock(true);
+    closeRef.current?.focus();
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMobileOpen(false);
+      if (event.key === "Escape") {
+        setMobileOpen(false);
+        toggleRef.current?.focus();
+      }
     };
     window.addEventListener("keydown", handleKey);
     return () => {
-      document.body.style.overflow = previousOverflow;
+      setScrollLock(false);
       window.removeEventListener("keydown", handleKey);
     };
   }, [mobileOpen]);
@@ -65,7 +121,7 @@ export default function Header({ variant = "overlay" }: HeaderProps) {
     if (!pending) return;
     sessionStorage.removeItem(PENDING_SCROLL_KEY);
     requestAnimationFrame(() => {
-      document.getElementById(pending)?.scrollIntoView({ behavior: "smooth" });
+      document.getElementById(pending)?.scrollIntoView({ behavior: scrollBehavior() });
     });
   }, [pathname]);
 
@@ -82,7 +138,7 @@ export default function Header({ variant = "overlay" }: HeaderProps) {
     if (href === "/") {
       if (pathname === "/") {
         e.preventDefault();
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({ top: 0, behavior: scrollBehavior() });
       }
       // Navigating from another page: let next/link do a normal push to
       // "/", which mounts the Home page fresh at the top already.
@@ -99,7 +155,7 @@ export default function Header({ variant = "overlay" }: HeaderProps) {
       // Already on the right page: scroll directly instead of relying on
       // the browser/Next to notice a hash-only URL change.
       e.preventDefault();
-      document.getElementById(hash)?.scrollIntoView({ behavior: "smooth" });
+      document.getElementById(hash)?.scrollIntoView({ behavior: scrollBehavior() });
       window.history.replaceState(null, "", `${targetPath}#${hash}`);
     } else {
       // Navigating from a different page: stash the target so the effect
@@ -108,6 +164,11 @@ export default function Header({ variant = "overlay" }: HeaderProps) {
       sessionStorage.setItem(PENDING_SCROLL_KEY, hash);
       router.push(href);
     }
+  }
+
+  function closeMenu() {
+    setMobileOpen(false);
+    toggleRef.current?.focus();
   }
 
   // Navy background + white text: either the "solid" variant, or the
@@ -213,7 +274,11 @@ export default function Header({ variant = "overlay" }: HeaderProps) {
             className={`xl:hidden flex-shrink-0 -mr-2 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
               isDark ? "text-white hover:bg-white/10" : "text-gray-800 hover:bg-black/5"
             }`}
-            onClick={() => setMobileOpen((open) => !open)}
+            ref={toggleRef}
+            onClick={() => {
+              setMenuEverOpened(true);
+              setMobileOpen((open) => !open);
+            }}
             aria-label="Toggle navigation"
             aria-expanded={mobileOpen}
             aria-controls="mobile-menu"
@@ -223,98 +288,218 @@ export default function Header({ variant = "overlay" }: HeaderProps) {
         </div>
       </div>
 
-      {/* Mobile menu: full-height navy sheet. Always mounted so it can fade/slide;
-          inert + invisible while closed so it can't be focused or tapped. */}
+      {/* Mobile menu: centered panel over a dark backdrop. Navy header, white
+          navigation, gold accents — all from the existing brand palette. */}
       <div
         id="mobile-menu"
         aria-hidden={!mobileOpen}
         inert={!mobileOpen}
-        className={`xl:hidden fixed inset-x-0 top-16 lg:top-20 bottom-0 overflow-hidden bg-gradient-to-b from-navy to-dark transition-[opacity,visibility,transform] duration-300 ease-out ${
-          mobileOpen
-            ? "visible opacity-100 translate-y-0"
-            : "invisible opacity-0 -translate-y-2"
+        // Backdrop click closes; clicks that start inside the panel never match
+        // currentTarget, so they can't close it by accident.
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closeMenu();
+        }}
+        className={`xl:hidden fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto overscroll-contain bg-black/70 px-3 pt-[max(12px,env(safe-area-inset-top))] pb-[max(12px,env(safe-area-inset-bottom))] transition-[opacity,visibility] duration-200 sm:items-center ${
+          mobileOpen ? "visible opacity-100" : "invisible opacity-0 pointer-events-none"
         }`}
       >
-        {/* Same faint line texture used on the site's dark CTA sections. */}
         <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(0deg, transparent, transparent 79px, rgba(255,255,255,0.018) 79px, rgba(255,255,255,0.018) 80px)",
-          }}
-        />
+          role="dialog"
+          aria-modal="true"
+          aria-label="Site navigation"
+          className={`relative flex max-h-[calc(100dvh-24px)] min-h-[min(640px,calc(100dvh-24px))] w-full max-w-[420px] flex-col overflow-hidden rounded-xl bg-white font-sans shadow-[0_18px_44px_rgba(0,0,0,0.35)] ring-1 ring-white/10 ${
+            mobileOpen ? "menu-panel-in" : ""
+          }`}
+        >
+          {/* Navy header with subtle architectural photo and curved gold edge */}
+          <div className="relative flex-shrink-0 overflow-hidden bg-navy px-5 pb-10 pt-5">
+            {menuEverOpened && (
+              <Image
+                src={MENU_HEADER_IMAGE}
+                alt=""
+                fill
+                sizes="420px"
+                aria-hidden="true"
+                className="object-cover object-right opacity-30"
+              />
+            )}
+            {/* Keeps the text side solid navy so the wordmark stays readable. */}
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                backgroundImage:
+                  "linear-gradient(90deg, #1a2744 0%, rgba(26,39,68,0.94) 48%, rgba(26,39,68,0.62) 100%)",
+              }}
+            />
 
-        <div className="relative h-full max-w-7xl mx-auto px-5 lg:px-8 flex flex-col">
-          <nav aria-label="Mobile" className="flex-1 min-h-0 overflow-y-auto overscroll-contain pt-4 pb-4">
-            <div className="max-w-xl">
+            <div className="relative z-10 flex items-center justify-between gap-3">
+              <Link
+                href="/"
+                onClick={(e) => {
+                  setScrollLock(false);
+                  handleNavClick(e, "/");
+                  setMobileOpen(false);
+                }}
+                className="flex min-w-0 items-center gap-3.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                aria-label={`${BRAND.name} home`}
+              >
+                <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gold shadow-[0_4px_12px_rgba(0,0,0,0.25)]">
+                  <Building2 className="h-6 w-6 text-white" strokeWidth={1.6} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-[22px] font-bold leading-tight tracking-tight text-white">
+                    {BRAND.name}
+                  </span>
+                  <span className="mt-1 block truncate text-[10px] font-medium uppercase tracking-[0.24em] text-white/70">
+                    {BRAND.title}
+                  </span>
+                </span>
+              </Link>
+              <button
+                ref={closeRef}
+                type="button"
+                onClick={closeMenu}
+                aria-label="Close navigation"
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10 active:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              >
+                <X className="h-6 w-6" strokeWidth={1.75} />
+              </button>
+            </div>
+
+            {/* Curved white edge with a thin gold line */}
+            <svg
+              className="absolute bottom-0 left-0 block h-6 w-full"
+              viewBox="0 0 420 24"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <defs>
+                <linearGradient id="menuHeaderGold" x1="0" x2="1" y1="0" y2="0">
+                  <stop offset="0" stopColor="#c9a04b" stopOpacity="0" />
+                  <stop offset="0.55" stopColor="#c9a04b" stopOpacity="0.85" />
+                  <stop offset="1" stopColor="#c9a04b" />
+                </linearGradient>
+              </defs>
+              <path d="M0 23 C130 23 290 17 420 2 V24 H0 Z" fill="#ffffff" />
+              <path
+                d="M0 23 C130 23 290 17 420 2"
+                fill="none"
+                stroke="url(#menuHeaderGold)"
+                strokeWidth="1.5"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+          </div>
+
+          {/* Navigation — scrolls on short screens while contact actions stay pinned below */}
+          <nav
+            aria-label="Mobile"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-1 touch-pan-y"
+          >
+            <ul className="flex flex-col">
               {NAV_LINKS.map(({ label, href }, index) => {
                 const active = isActive(href);
+                const Icon = NAV_ICONS[label] ?? FileText;
                 return (
-                  <Link
+                  <li
                     key={`${href}-${index}`}
-                    href={href}
-                    onClick={(e) => {
-                      // Release the scroll lock first so same-page hash scrolling works.
-                      document.body.style.overflow = "";
-                      handleNavClick(e, href);
-                      setMobileOpen(false);
-                    }}
-                    style={{ transitionDelay: mobileOpen ? `${90 + index * 45}ms` : "0ms" }}
-                    className={`group flex items-center justify-between py-4 [@media(max-height:700px)]:py-2.5 border-b border-white/10 transition-all duration-500 ease-out ${
-                      mobileOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+                    className={`relative after:absolute after:bottom-0 after:left-14 after:right-3 after:h-px after:bg-slate-200/80 last:after:hidden ${
+                      active ? "after:hidden" : ""
                     }`}
                   >
-                    <span className="flex items-center gap-4 min-w-0">
-                      <span className="w-6 flex-shrink-0 font-serif text-[11px] tracking-[0.2em] text-gold/70">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <span
-                        className={`font-serif text-[1.65rem] [@media(max-height:700px)]:text-xl leading-none tracking-tight transition-colors ${
-                          active ? "text-gold" : "text-white/90 group-hover:text-white"
-                        }`}
-                      >
+                    <Link
+                      href={href}
+                      aria-current={active ? "page" : undefined}
+                      onClick={(e) => {
+                        // Release the scroll lock first so same-page hash scrolling works.
+                        setScrollLock(false);
+                        handleNavClick(e, href);
+                        setMobileOpen(false);
+                      }}
+                      className={`group relative flex min-h-[54px] items-center gap-4 overflow-hidden rounded-xl py-3 pl-4 pr-3 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gold ${
+                        active
+                          ? "bg-gold/[0.12] text-[#8a6a1f]"
+                          : "text-navy hover:bg-gold/[0.06] active:bg-gold/[0.12]"
+                      }`}
+                    >
+                      {active && (
+                        <span
+                          className="absolute inset-y-0 left-0 w-[3px] bg-gold"
+                          aria-hidden="true"
+                        />
+                      )}
+                      <Icon
+                        className={`h-[22px] w-[22px] flex-shrink-0 ${active ? "text-gold" : "text-navy"}`}
+                        strokeWidth={1.6}
+                        aria-hidden="true"
+                      />
+                      <span className={`flex-1 text-[17px] tracking-tight ${active ? "font-semibold" : "font-medium"}`}>
                         {label}
                       </span>
-                    </span>
-                    <ChevronRight
-                      className={`w-4 h-4 flex-shrink-0 transition-all group-hover:translate-x-0.5 ${
-                        active ? "text-gold" : "text-white/25 group-hover:text-gold"
-                      }`}
-                    />
-                  </Link>
+                      <ChevronRight
+                        className={`h-[18px] w-[18px] flex-shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 ${
+                          active ? "text-gold" : "text-navy/60"
+                        }`}
+                        strokeWidth={1.75}
+                        aria-hidden="true"
+                      />
+                    </Link>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           </nav>
 
-          {/* Pinned bottom block: always reachable without scrolling. */}
-          <div
-            className="flex-shrink-0 max-w-xl w-full pt-4 [@media(max-height:700px)]:pt-3 space-y-3 [@media(max-height:700px)]:space-y-2 border-t border-white/10 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
-          >
+          {/* Contact actions pinned to the bottom of the panel */}
+          <div className="mt-auto flex-shrink-0 px-4 pb-4 pt-3">
             <a
               href={BRAND.phoneHref}
               onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-3.5 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 [@media(max-height:700px)]:py-2 transition-colors hover:bg-white/[0.08]"
+              className="group mb-3 flex min-h-[68px] items-center gap-3.5 rounded-xl border border-[#e8dfc9] bg-[#fbf9f4] px-3.5 py-2.5 transition-colors hover:border-gold/60 active:bg-[#f5efe0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
             >
-              <span className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-gold/20">
-                <Phone className="w-4 h-4 text-gold" />
+              <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-gold text-white">
+                <Phone className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
               </span>
-              <span className="min-w-0">
-                <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+              <span className="min-w-0 flex-1">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
                   Call us
                 </span>
-                <span className="block text-base font-semibold text-white whitespace-nowrap">
+                <span className="mt-0.5 block text-[18px] font-bold leading-tight tracking-tight text-navy">
                   {BRAND.phone}
                 </span>
               </span>
+              <ChevronRight className="h-[18px] w-[18px] flex-shrink-0 text-gold" strokeWidth={1.75} aria-hidden="true" />
             </a>
             <Link
               href="/contact"
               onClick={() => setMobileOpen(false)}
-              className="block rounded-xl bg-gold py-4 [@media(max-height:700px)]:py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              className="flex min-h-[54px] w-full items-center justify-center gap-2.5 rounded-xl bg-gold px-4 text-base font-semibold text-white shadow-[0_6px_16px_rgba(201,160,75,0.32)] transition-[background-color,transform,box-shadow] duration-200 hover:bg-[#b98f3d] active:translate-y-px active:shadow-[0_3px_8px_rgba(201,160,75,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
+              style={{ backgroundImage: "linear-gradient(180deg, #d3ac5a 0%, #bf943f 100%)" }}
             >
+              <Phone className="h-[18px] w-[18px]" strokeWidth={1.8} aria-hidden="true" />
               Get a Callback
+              <ArrowRight className="h-[18px] w-[18px]" strokeWidth={1.8} aria-hidden="true" />
             </Link>
+          </div>
+
+          {/* Decorative footer: tagline + navy base with a thin gold curve.
+              Hidden on short screens so it never competes with the actions. */}
+          <div className="flex-shrink-0 [@media(max-height:660px)]:hidden" aria-hidden="true">
+            <div className="flex items-center justify-center gap-3 px-6 pb-1 text-[10px] font-medium uppercase tracking-[0.22em] text-slate-400">
+              <span className="h-px w-10 bg-slate-200" />
+              Your Dream &middot; Our Priority
+              <span className="h-px w-10 bg-slate-200" />
+            </div>
+            <svg className="block h-8 w-full" viewBox="0 0 420 32" preserveAspectRatio="none">
+              <path d="M0 2 Q210 40 420 2 V32 H0 Z" fill="#1a2744" />
+              <path
+                d="M0 2 Q210 40 420 2"
+                fill="none"
+                stroke="#c9a04b"
+                strokeWidth="1.25"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
           </div>
         </div>
       </div>

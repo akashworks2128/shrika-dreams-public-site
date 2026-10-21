@@ -68,8 +68,7 @@ export default function BuilderCard({ builder, accent }: BuilderCardProps) {
           own stats row, rather than sitting inline beside the stats. */}
       <Link
         href={`/builders/${builder.slug}`}
-        scroll={false}
-        className="mt-4 pt-4 border-t border-black/[0.06] inline-flex items-center gap-1 text-sm font-semibold text-navy group"
+        className="mt-4 border-t border-black/[0.06] inline-flex min-h-11 items-center gap-1 pt-1 text-sm font-semibold text-navy group"
       >
         View Projects
         <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />

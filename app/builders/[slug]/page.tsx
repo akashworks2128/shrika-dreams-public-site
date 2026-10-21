@@ -135,7 +135,7 @@ export default async function BuilderPage({ params }: PageProps) {
               <p className="text-sm text-gray-400">No published projects are currently available for this builder.</p>
             )}
 
-            <Link href={`/projects?builder=${encodeURIComponent(builder.name)}`} scroll={false} className="mt-7 inline-flex items-center gap-1 text-sm font-semibold text-navy">
+            <Link href={`/projects?builder=${encodeURIComponent(builder.name)}`} scroll={false} className="mt-7 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-navy">
               View all projects <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

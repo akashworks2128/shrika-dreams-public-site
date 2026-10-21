@@ -19,7 +19,7 @@ export default function LocalityGrid({ localities }: { localities: Locality[] })
           </div>
           <Link
             href="/localities"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy group"
+            className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-navy group"
           >
             View All Areas
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

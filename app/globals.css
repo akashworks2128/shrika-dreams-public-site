@@ -16,15 +16,27 @@
   --font-sans: var(--font-dm-sans), system-ui, sans-serif;
 }
 
+/* Use native scrolling by default. Smooth scrolling is requested explicitly by
+   individual navigation actions, avoiding conflicts on touch devices. */
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
+  -webkit-text-size-adjust: 100%;
 }
 
-
+/* Horizontal overflow guard.
+   `overflow-x: hidden` on BOTH <html> and <body> makes <body> its own scroll
+   container (its overflow-y computes to `auto`) nested inside the viewport
+   scroller. On mobile browsers that causes janky touch scrolling, and it also
+   stops `body { overflow: hidden }` from locking the page behind modals.
+   `overflow-x: clip` clips without creating a scroll container, so the
+   viewport remains the single scroller. */
 html,
 body {
   max-width: 100%;
-  overflow-x: hidden;
+}
+
+body {
+  overflow-x: clip;
 }
 
 /* Keep layout transforms/animated elements from expanding the document width. */
@@ -38,6 +50,13 @@ footer {
 body {
   background: var(--color-offwhite);
   font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Keep touch scrolling native and responsive in overflow containers. */
+nav,
+[role="listbox"] {
+  -webkit-overflow-scrolling: touch;
 }
 
 
@@ -63,5 +82,21 @@ body {
 
   *, *::before, *::after {
     scroll-behavior: auto !important;
+  }
+}
+
+/* Mobile menu panel entrance — transform/opacity only (compositor friendly). */
+@keyframes menuPanelIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.menu-panel-in {
+  animation: menuPanelIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-panel-in {
+    animation: none;
   }
 }
